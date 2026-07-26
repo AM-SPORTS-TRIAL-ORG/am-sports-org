@@ -1,18 +1,18 @@
-import { createPublicClient } from "@/lib/supabase.public";
+import { createClient as createPublicClient } from "@/utils/supabase/server";
 import { computeStandings } from "@/lib/schedule";
 import { MatchScoreboard } from "@/components/public/MatchScoreboard";
 import { StandingsTable } from "@/components/public/StandingsTable";
 import { TeamBadge } from "@/components/public/TeamBadge";
 import { LiveMatchUpdater } from "@/components/public/LiveMatchUpdater";
 
-export const revalidate = 30;
+export const revalidate = 0;
 
 export default async function TournamentPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const supabase = createPublicClient();
+  const supabase = await createPublicClient();
 
   const [
     { data: tournament, error: tErr },

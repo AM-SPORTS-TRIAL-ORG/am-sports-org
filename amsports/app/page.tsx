@@ -1,10 +1,10 @@
-import { createPublicClient } from "@/lib/supabase.public";
+import { createClient as createPublicClient } from "@/utils/supabase/server";
 import Link from "next/link";
 
-export const revalidate = 30;
+export const revalidate = 0;
 
 export default async function HomePage() {
-  const supabase = createPublicClient();
+  const supabase = await createPublicClient();
   const { data: tournaments } = await supabase.from("tournaments").select("*").order("created_at", { ascending: false });
   const { data: teams } = await supabase.from("teams").select("*");
   const { data: matches } = await supabase.from("matches").select("*");
