@@ -10,8 +10,9 @@ export const revalidate = 0;
 export default async function TournamentPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = await createPublicClient();
 
   const [
@@ -20,12 +21,12 @@ export default async function TournamentPage({
     { data: matches },
     { data: pitches },
   ] = await Promise.all([
-    supabase.from("tournaments").select("*").eq("id", params.id).maybeSingle(),
+    supabase.from("tournaments").select("*").eq("id", id).maybeSingle(),
     supabase.from("teams").select("*"),
     supabase
       .from("matches")
       .select("*")
-      .eq("tournament_id", params.id)
+      .eq("tournament_id", id)
       .order("scheduled_date", { ascending: true })
       .order("scheduled_time", { ascending: true }),
     supabase.from("pitches").select("*"),
@@ -95,7 +96,7 @@ export default async function TournamentPage({
 
   return (
     <div className="space-y-6">
-      <LiveMatchUpdater tournamentId={params.id} />
+      <LiveMatchUpdater tournamentId={id} />
 
       <a href="/" style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-body)", fontSize: "13px" }}>
         ← All tournaments
