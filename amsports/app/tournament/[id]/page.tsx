@@ -20,7 +20,7 @@ export default async function TournamentPage({
     { data: matches },
     { data: pitches },
   ] = await Promise.all([
-    supabase.from("tournaments").select("*").eq("id", params.id).single(),
+    supabase.from("tournaments").select("*").eq("id", params.id).maybeSingle(),
     supabase.from("teams").select("*"),
     supabase
       .from("matches")
