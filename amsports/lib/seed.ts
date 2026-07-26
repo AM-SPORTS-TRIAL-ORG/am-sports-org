@@ -1,3 +1,5 @@
+import { generateMatchdays, autoSchedule } from "@/lib/schedule";
+
 const PALETTE = ["#E8B93A", "#4F8FC0", "#C4432E", "#4FA36A", "#8B5FA3", "#D9782B"];
 
 export const SEED_TEAMS = [

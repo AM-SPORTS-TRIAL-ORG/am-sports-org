@@ -12,7 +12,12 @@ export function AdminAudit({ auditLog }: { auditLog: AuditLog[] }) {
       <div className="space-y-1.5 max-h-96 overflow-y-auto">
         {auditLog.map((entry) => (
           <div key={entry.id} className="text-xs px-2 py-1.5 rounded" style={{ background: "var(--pitch-950)", fontFamily: "var(--font-mono)", color: "var(--chalk-dim)" }}>
-            <span style={{ color: "var(--amber)" }}>{entry.action}</span> — {entry.detail} <span className="opacity-60">({entry.actor_user_id ?? "system"}, {new Date(entry.timestamp).toLocaleString()})</span>
+            <span style={{ color: "var(--amber)" }}>{entry.action}</span>
+            {(entry.old_value || entry.new_value) && (
+              <span> — <span style={{ color: "var(--chalk-dim)", textDecoration: "line-through" }}>{entry.old_value ?? "—"}</span> → <span style={{ color: "var(--chalk)" }}>{entry.new_value ?? "—"}</span></span>
+            )}
+            {entry.match_id && <span style={{ opacity: 0.6 }}> [match {entry.match_id}]</span>}
+            <span className="opacity-60"> ({entry.actor_user_id ?? "system"}, {new Date(entry.timestamp).toLocaleString()})</span>
           </div>
         ))}
       </div>

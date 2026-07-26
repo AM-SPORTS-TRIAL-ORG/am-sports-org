@@ -24,12 +24,7 @@ create table pitches (
   created_at timestamptz default now()
 );
 
-create table tournament_pitches (
-  tournament_id text not null references tournaments(id) on delete cascade,
-  pitch_id text not null references pitches(id) on delete cascade,
-  primary key (tournament_id, pitch_id)
-);
-
+-- tournaments must come before tournament_pitches and matches
 create table tournaments (
   id text primary key,
   name text not null,
@@ -43,6 +38,12 @@ create table tournaments (
   points_win int default 3,
   points_draw int default 1,
   created_at timestamptz default now()
+);
+
+create table tournament_pitches (
+  tournament_id text not null references tournaments(id) on delete cascade,
+  pitch_id text not null references pitches(id) on delete cascade,
+  primary key (tournament_id, pitch_id)
 );
 
 create table matches (
@@ -90,7 +91,7 @@ create table audit_log (
 -- Enable Realtime for matches table
 alter publication supabase_realtime add table matches;
 
--- RLS: Teams — captains can read their own team, admins can read/write all
+-- RLS: Teams
 alter table teams enable row level security;
 
 create policy "Public can read all teams" on teams for select using (true);
@@ -107,27 +108,27 @@ create policy "Admins can delete teams" on teams for delete using (
   auth.jwt() ->> 'role' = 'admin'
 );
 
--- RLS: Players — captains can read/write their own team's players, admins full access
+-- RLS: Players
 alter table players enable row level security;
 
 create policy "Captains can read their team players" on players for select using (
-  team_id in (select team_id from users where id = auth.uid())
-  or exists (select 1 from users where id = auth.uid() and role = 'admin')
+  team_id in (select team_id from users where id = auth.uid()::text)
+  or exists (select 1 from users where id = auth.uid()::text and role = 'admin')
 );
 
 create policy "Captains can insert their team players" on players for insert with check (
-  team_id = (select team_id from users where id = auth.uid())
+  team_id = (select team_id from users where id = auth.uid()::text)
 );
 
 create policy "Captains can update their team players" on players for update with check (
-  team_id = (select team_id from users where id = auth.uid())
+  team_id = (select team_id from users where id = auth.uid()::text)
 );
 
 create policy "Captains can delete their team players" on players for delete using (
-  team_id = (select team_id from users where id = auth.uid())
+  team_id = (select team_id from users where id = auth.uid()::text)
 );
 
--- RLS: Pitches — public read, admin write
+-- RLS: Pitches
 alter table pitches enable row level security;
 
 create policy "Public can read all pitches" on pitches for select using (true);
@@ -144,7 +145,7 @@ create policy "Admins can delete pitches" on pitches for delete using (
   auth.jwt() ->> 'role' = 'admin'
 );
 
--- RLS: Tournaments — public read, admin write
+-- RLS: Tournaments
 alter table tournaments enable row level security;
 
 create policy "Public can read all tournaments" on tournaments for select using (true);
@@ -161,7 +162,7 @@ create policy "Admins can delete tournaments" on tournaments for delete using (
   auth.jwt() ->> 'role' = 'admin'
 );
 
--- RLS: Matches — public read, admin write, captains can read their team's matches
+-- RLS: Matches
 alter table matches enable row level security;
 
 create policy "Public can read all matches" on matches for select using (true);
@@ -179,31 +180,31 @@ create policy "Admins can delete matches" on matches for delete using (
 );
 
 create policy "Captains can read their team matches" on matches for select using (
-  home_team_id in (select team_id from users where id = auth.uid())
-  or away_team_id in (select team_id from users where id = auth.uid())
+  home_team_id in (select team_id from users where id = auth.uid()::text)
+  or away_team_id in (select team_id from users where id = auth.uid()::text)
 );
 
--- RLS: Lineups — captains can read/write their own team's lineups, admins full access
+-- RLS: Lineups
 alter table lineups enable row level security;
 
 create policy "Captains can read their team lineups" on lineups for select using (
-  team_id = (select team_id from users where id = auth.uid())
-  or exists (select 1 from users where id = auth.uid() and role = 'admin')
+  team_id = (select team_id from users where id = auth.uid()::text)
+  or exists (select 1 from users where id = auth.uid()::text and role = 'admin')
 );
 
 create policy "Captains can insert their team lineups" on lineups for insert with check (
-  team_id = (select team_id from users where id = auth.uid())
+  team_id = (select team_id from users where id = auth.uid()::text)
 );
 
 create policy "Captains can update their team lineups" on lineups for update with check (
-  team_id = (select team_id from users where id = auth.uid())
+  team_id = (select team_id from users where id = auth.uid()::text)
 );
 
 create policy "Captains can delete their team lineups" on lineups for delete using (
-  team_id = (select team_id from users where id = auth.uid())
+  team_id = (select team_id from users where id = auth.uid()::text)
 );
 
--- RLS: Users — public read, admin write
+-- RLS: Users
 alter table users enable row level security;
 
 create policy "Public can read all users" on users for select using (true);
@@ -220,7 +221,7 @@ create policy "Admins can delete users" on users for delete using (
   auth.jwt() ->> 'role' = 'admin'
 );
 
--- RLS: Audit Log — public read for admins, insert only
+-- RLS: Audit Log
 alter table audit_log enable row level security;
 
 create policy "Admins can read audit log" on audit_log for select using (
@@ -237,27 +238,23 @@ insert into teams (id, name, captain_user_id, color) values
   ('t4', 'Savannah United', null, '#4FA36A');
 
 insert into players (id, team_id, name, jersey_number) values
-  ('p1', 't1', 'D. Okello', 1),
-  ('p2', 't1', 'M. Kato', 4),
-  ('p3', 't1', 'R. Ssali', 7),
-  ('p4', 't1', 'J. Mugisha', 9),
-  ('p5', 't1', 'F. Wasswa', 10),
-  ('p6', 't1', 'B. Namu', 11),
-  ('p7', 't2', 'K. Aciro', 1),
-  ('p8', 't2', 'P. Otim', 5),
-  ('p9', 't2', 'S. Adong', 8),
-  ('p10', 't3', 'T. Kirabo', 2),
-  ('p11', 't3', 'L. Nabbosa', 6),
+  ('p1',  't1', 'D. Okello',     1),
+  ('p2',  't1', 'M. Kato',       4),
+  ('p3',  't1', 'R. Ssali',      7),
+  ('p4',  't1', 'J. Mugisha',    9),
+  ('p5',  't1', 'F. Wasswa',    10),
+  ('p6',  't1', 'B. Namu',      11),
+  ('p7',  't2', 'K. Aciro',      1),
+  ('p8',  't2', 'P. Otim',       5),
+  ('p9',  't2', 'S. Adong',      8),
+  ('p10', 't3', 'T. Kirabo',     2),
+  ('p11', 't3', 'L. Nabbosa',    6),
   ('p12', 't4', 'A. Byaruhanga', 3),
-  ('p13', 't4', 'C. Nakato', 9);
+  ('p13', 't4', 'C. Nakato',     9);
 
-insert into pitches (id, name) values ('pitch1', 'Main Pitch');
+insert into pitches (id, name) values
+  ('pitch1', 'Main Pitch');
 
 insert into users (id, email, role, team_id) values
-  ('u-admin1', 'admin@amsports.demo', 'admin', null),
+  ('u-admin1',   'admin@amsports.demo',          'admin',   null),
   ('u-captain1', 'captain.comets@amsports.demo', 'captain', 't1');
-
-insert into tournaments (id, name, start_date, end_date, status, match_duration_minutes, gap_minutes, daily_start_time, daily_end_time, points_win, points_draw)
-values ('tour1', 'AM SPORTS City League', '2026-08-01', '2026-08-22', 'active', 60, 15, '09:00', '17:00', 3, 1);
-
-insert into tournament_pitches (tournament_id, pitch_id) values ('tour1', 'pitch1');

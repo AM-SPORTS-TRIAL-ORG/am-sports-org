@@ -1,8 +1,9 @@
-import { createSupabaseServerClient } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase.server";
 import { computeStandings } from "@/lib/schedule";
 import { MatchScoreboard } from "@/components/public/MatchScoreboard";
 import { StandingsTable } from "@/components/public/StandingsTable";
 import { TeamBadge } from "@/components/public/TeamBadge";
+import { LiveMatchUpdater } from "@/components/public/LiveMatchUpdater";
 
 export const revalidate = 30;
 
@@ -11,7 +12,7 @@ export default async function TournamentPage({
 }: {
   params: { id: string };
 }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data: tournament } = await supabase
     .from("tournaments")
@@ -53,9 +54,27 @@ export default async function TournamentPage({
     return acc;
   }, {});
 
+  // Derive participating team IDs from the matches themselves, since tournaments
+  // table has no team_ids column. Collect unique team IDs from home + away.
+  const teamIdSet = new Set<string>();
+  (matches ?? []).forEach((m) => {
+    teamIdSet.add(m.home_team_id);
+    teamIdSet.add(m.away_team_id);
+  });
+  const teamIds = Array.from(teamIdSet);
+
+  // computeStandings expects { homeId, awayId, ... } — map from DB column names
+  const matchesForStandings = (matches ?? []).map((m) => ({
+    homeId: m.home_team_id,
+    awayId: m.away_team_id,
+    homeScore: m.home_score,
+    awayScore: m.away_score,
+    status: m.status,
+  }));
+
   const standings = computeStandings(
-    (matches ?? []) as { homeId: string; awayId: string; homeScore: number; awayScore: number; status: string }[],
-    tournament.team_ids,
+    matchesForStandings,
+    teamIds,
     teamsById,
     tournament.points_win,
     tournament.points_draw
@@ -65,6 +84,9 @@ export default async function TournamentPage({
 
   return (
     <div className="space-y-6">
+      {/* Realtime subscription — invisible, triggers router.refresh() on score changes */}
+      <LiveMatchUpdater tournamentId={params.id} />
+
       <a href="/" className="flex items-center gap-1 text-sm" style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-body)" }}>
         ← All tournaments
       </a>
@@ -72,7 +94,7 @@ export default async function TournamentPage({
       <div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: "28px", color: "var(--chalk)" }}>{tournament.name}</h1>
         <p className="text-xs mt-1 uppercase tracking-widest" style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}>
-          {tournament.status} · Matchday format · {tournament.points_win} pts/win {tournament.points_draw} pts/draw
+          {tournament.status} · Round robin · {tournament.points_win} pts/win · {tournament.points_draw} pt/draw
         </p>
       </div>
 
@@ -105,7 +127,7 @@ export default async function TournamentPage({
       <section>
         <h2 className="text-sm uppercase tracking-widest mb-3" style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}>Teams</h2>
         <div className="grid grid-cols-2 gap-3">
-          {tournament.team_ids.map((id: string) => {
+          {teamIds.map((id) => {
             const team = teamsById[id];
             if (!team) return null;
             return (

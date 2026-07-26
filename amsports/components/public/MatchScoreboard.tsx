@@ -20,7 +20,7 @@ export function MatchScoreboard({ match, homeTeam, awayTeam, pitchesById }: { ma
 function TeamRow({ team, reverse }: { team: { name: string; color: string } | undefined; reverse?: boolean }) {
   return (
     <div className={`flex items-center gap-2 min-w-0 flex-1 ${reverse ? "flex-row-reverse text-right" : ""}`}>
-      <TeamBadge team={team} size={24} />
+      {team && <TeamBadge team={team} size={24} />}
       <span className="truncate text-sm" style={{ color: "var(--chalk)", fontFamily: "var(--font-body)" }}>
         {team ? team.name : "TBD"}
       </span>
@@ -52,7 +52,7 @@ function MatchMeta({ match, pitchesById }: { match: Match; pitchesById: Record<s
       </span>
       {match.status === "live" && <span className="pulse-dot" />}
       <span style={{ color: STATUS_COLOR[match.status] }}>{STATUS_LABEL[match.status]}</span>
-      {match.overflow && (
+      {(match as Match & { overflow?: boolean }).overflow && (
         <span className="flex items-center gap-1" style={{ color: "var(--red-card)" }}>
           ⚠ overflow day
         </span>

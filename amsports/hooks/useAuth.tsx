@@ -5,11 +5,20 @@ import { createSupabaseClient } from "@/lib/supabase";
 import type { User } from "@/lib/types";
 
 interface AuthContextType {
-  user: User | null;
+  user: User | null;         // app profile row (role, team_id, email)
   loading: boolean;
+  isAdmin: boolean;
+  isCaptain: boolean;
+  signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  isAdmin: false,
+  isCaptain: false,
+  signOut: async () => {},
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -35,19 +44,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   async function fetchProfile(userId: string) {
     const supabase = createSupabaseClient();
-    const { data } = await supabase.from("users").select("*").eq("id", userId).maybeSingle();
+    const { data } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
     setUser(data ?? null);
     setLoading(false);
   }
 
-  return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
+  async function signOut() {
+    const supabase = createSupabaseClient();
+    await supabase.auth.signOut();
+    setUser(null);
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isAdmin: user?.role === "admin",
+        isCaptain: user?.role === "captain",
+        signOut,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

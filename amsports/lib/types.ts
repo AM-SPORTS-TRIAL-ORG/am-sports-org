@@ -31,6 +31,11 @@ export interface Tournament {
   points_draw: number;
 }
 
+export interface Pitch {
+  id: string;
+  name: string;
+}
+
 export interface TournamentPitch {
   tournament_id: string;
   pitch_id: string;
