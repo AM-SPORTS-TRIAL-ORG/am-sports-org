@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+:root {
+  --pitch-950: #0B2015;
+  --pitch-800: #14331F;
+  --pitch-700: #1D4A2C;
+  --chalk: #F4F1E8;
+  --chalk-dim: rgba(244, 241, 232, 0.58);
+  --amber: #E8B93A;
+  --red-card: #C4432E;
+  --win-green: #4FA36A;
+  --line: rgba(244, 241, 232, 0.12);
+  --font-display: "Bebas Neue", sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "Space Mono", monospace;
+  --background: var(--pitch-950);
+  --foreground: var(--chalk);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
+  --color-amber: var(--amber);
+  --color-red-card: var(--red-card);
+  --color-win-green: var(--win-green);
+  --color-chalk: var(--chalk);
+  --color-chalk-dim: var(--chalk-dim);
+  --color-pitch-950: var(--pitch-950);
+  --color-pitch-800: var(--pitch-800);
+  --color-pitch-700: var(--pitch-700);
+}
+
+@keyframes ams-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--amber);
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pulse-dot {
+    animation: ams-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+body {
+  background: var(--pitch-950);
+  color: var(--chalk);
+  font-family: var(--font-body);
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(244, 241, 232, 0.015) 0px,
+    rgba(244, 241, 232, 0.015) 40px,
+    transparent 40px,
+    transparent 80px
+  );
+}
+
+.ams-btn {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+.ams-tab-btn {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: var(--font-body);
+}
+
+.ams-input {
+  font-family: var(--font-body);
+  background: var(--pitch-950);
+  border: 1px solid var(--line);
+  color: var(--chalk);
+}
+
+@media (max-width: 640px) {
+  .ams-nav-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
