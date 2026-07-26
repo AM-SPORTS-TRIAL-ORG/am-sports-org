@@ -1,10 +1,10 @@
-import { createSupabaseServerClient } from "@/lib/supabase.server";
+import { createSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
 
 export const revalidate = 30;
 
 export default async function HomePage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseClient();
   const { data: tournaments } = await supabase.from("tournaments").select("*").order("created_at", { ascending: false });
   const { data: teams } = await supabase.from("teams").select("*");
   const { data: matches } = await supabase.from("matches").select("*");

@@ -264,6 +264,24 @@ export default function AdminPage() {
     await fetchAll();
   }
 
+  async function addMatch(match: Omit<Match, "id" | "home_score" | "away_score" | "status">) {
+    const supabase = createSupabaseClient();
+    await supabase.from("matches").insert({
+      id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      ...match,
+      home_score: 0,
+      away_score: 0,
+      status: "scheduled",
+    });
+    await fetchAll();
+  }
+
+  async function deleteMatch(matchId: string) {
+    const supabase = createSupabaseClient();
+    await supabase.from("matches").delete().eq("id", matchId);
+    await fetchAll();
+  }
+
   async function updateMatch(matchId: string, updates: Partial<Match>) {
     const supabase = createSupabaseClient();
     const prev = matches.find((m) => m.id === matchId);
@@ -340,6 +358,8 @@ export default function AdminPage() {
           teams={teams}
           pitches={pitches}
           onUpdate={updateMatch}
+          onAddMatch={addMatch}
+          onDeleteMatch={deleteMatch}
         />
       )}
       {tab === "audit" && <AdminAudit auditLog={auditLog} />}
