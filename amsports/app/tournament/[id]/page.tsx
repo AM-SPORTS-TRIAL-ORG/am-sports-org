@@ -1,4 +1,4 @@
-import { createSupabaseClient } from "@/lib/supabase";
+import { createPublicClient } from "@/lib/supabase.public";
 import { computeStandings } from "@/lib/schedule";
 import { MatchScoreboard } from "@/components/public/MatchScoreboard";
 import { StandingsTable } from "@/components/public/StandingsTable";
@@ -12,7 +12,7 @@ export default async function TournamentPage({
 }: {
   params: { id: string };
 }) {
-  const supabase = createSupabaseClient();
+  const supabase = createPublicClient();
 
   const [
     { data: tournament, error: tErr },
