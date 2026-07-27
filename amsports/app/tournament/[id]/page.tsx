@@ -1,9 +1,8 @@
 import { createClient as createPublicClient } from "@/utils/supabase/server";
 import { computeStandings } from "@/lib/schedule";
-import { MatchScoreboard } from "@/components/public/MatchScoreboard";
 import { StandingsTable } from "@/components/public/StandingsTable";
 import { TeamBadge } from "@/components/public/TeamBadge";
-import { LiveMatchUpdater } from "@/components/public/LiveMatchUpdater";
+import { LiveScoreboard } from "@/components/public/LiveScoreboard";
 
 export const revalidate = 0;
 
@@ -86,17 +85,8 @@ export default async function TournamentPage({
 
   const liveMatches = (matches ?? []).filter((m) => m.status === "live");
 
-  // Group matches by matchday for better display
-  const matchdays = (matches ?? []).reduce<Record<number, typeof matches>>((acc, m) => {
-    const day = m.matchday ?? 0;
-    if (!acc[day]) acc[day] = [];
-    acc[day]!.push(m);
-    return acc;
-  }, {});
-
   return (
     <div className="space-y-6">
-      <LiveMatchUpdater tournamentId={id} />
 
       <a href="/" style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-body)", fontSize: "13px" }}>
         ← All tournaments
@@ -132,42 +122,17 @@ export default async function TournamentPage({
         )}
       </section>
 
-      {/* Fixtures grouped by matchday */}
+      {/* Fixtures — live client component, updates instantly via Realtime */}
       <section>
         <h2 className="text-sm uppercase tracking-widest mb-3" style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}>
           Fixtures
         </h2>
-        {(matches ?? []).length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-body)" }}>
-            No matches scheduled yet.
-          </p>
-        ) : (
-          <div className="space-y-5">
-            {Object.entries(matchdays)
-              .sort(([a], [b]) => Number(a) - Number(b))
-              .map(([day, dayMatches]) => (
-                <div key={day}>
-                  <div
-                    className="text-[10px] uppercase tracking-widest mb-2"
-                    style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}
-                  >
-                    Matchday {Number(day) + 1}
-                  </div>
-                  <div className="space-y-2">
-                    {(dayMatches ?? []).map((m) => (
-                      <MatchScoreboard
-                        key={m.id}
-                        match={m}
-                        homeTeam={teamsById[m.home_team_id]}
-                        awayTeam={teamsById[m.away_team_id]}
-                        pitchesById={pitchesById}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-          </div>
-        )}
+        <LiveScoreboard
+          initialMatches={matches ?? []}
+          teamsById={teamsById}
+          pitchesById={pitchesById}
+          tournamentId={id}
+        />
       </section>
 
       {/* Teams */}
