@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createSupabaseClient } from "@/lib/supabase";
 import { generateDaySlots } from "@/lib/schedule";
 import type { Team, Pitch, Tournament, Match, AuditLog, User } from "@/lib/types";
@@ -22,6 +22,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  const lastUpdateRef = useRef<number>(0);
+
   useEffect(() => {
     // Grab current session user id for audit log entries
     const supabase = createSupabaseClient();
@@ -29,7 +31,12 @@ export default function AdminPage() {
       setCurrentUserId(data.session?.user?.id ?? null);
     });
     fetchAll();
-    const interval = setInterval(fetchAll, 10000);
+    // Poll every 10s but skip if a manual update happened in the last 3s
+    const interval = setInterval(() => {
+      if (Date.now() - lastUpdateRef.current > 3000) {
+        fetchAll();
+      }
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -291,8 +298,8 @@ export default function AdminPage() {
   async function updateMatch(matchId: string, updates: Partial<Match>) {
     const supabase = createSupabaseClient();
     const prev = matches.find((m) => m.id === matchId);
+    lastUpdateRef.current = Date.now(); // prevent poll from overwriting optimistic state
     await supabase.from("matches").update(updates).eq("id", matchId);
-    // Optimistic update is fine here — no duplication risk on update
     setMatches((prevMatches) => prevMatches.map((m) => (m.id === matchId ? { ...m, ...updates } : m)));
 
     // Write audit log entry
