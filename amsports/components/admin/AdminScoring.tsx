@@ -283,6 +283,14 @@ export function AdminScoring({
                       <div className="flex items-center gap-2">
                         {m.status === "live" && <span className="pulse-dot" />}
                         <span style={{ color: "var(--amber)" }}>{m.status}</span>
+                        {/* Score page link — always visible */}
+                        <a
+                          href={`/admin/scoring/${m.id}`}
+                          className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide"
+                          style={{ background: "var(--amber)", color: "#101010", fontFamily: "var(--font-mono)" }}
+                        >
+                          Score
+                        </a>
                         {/* Delete button — only on scheduled/postponed */}
                         {(m.status === "scheduled" || m.status === "postponed") && (
                           <button
