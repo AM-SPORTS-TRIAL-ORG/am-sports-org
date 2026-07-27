@@ -264,6 +264,12 @@ export default function AdminPage() {
     await fetchAll();
   }
 
+  async function updateTournamentStatus(tourId: string, status: "upcoming" | "active" | "completed") {
+    const supabase = createSupabaseClient();
+    await supabase.from("tournaments").update({ status }).eq("id", tourId);
+    await fetchAll();
+  }
+
   async function addMatch(match: Omit<Match, "id" | "home_score" | "away_score" | "status">) {
     const supabase = createSupabaseClient();
     await supabase.from("matches").insert({
@@ -358,6 +364,7 @@ export default function AdminPage() {
           teams={teams}
           pitches={pitches}
           onUpdate={updateMatch}
+          onUpdateTournament={updateTournamentStatus}
           onAddMatch={addMatch}
           onDeleteMatch={deleteMatch}
         />

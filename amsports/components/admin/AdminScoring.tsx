@@ -15,6 +15,7 @@ export function AdminScoring({
   teams,
   pitches,
   onUpdate,
+  onUpdateTournament,
   onAddMatch,
   onDeleteMatch,
 }: {
@@ -23,6 +24,7 @@ export function AdminScoring({
   teams: Team[];
   pitches: Pitch[];
   onUpdate: (id: string, updates: Partial<Match>) => void;
+  onUpdateTournament: (id: string, status: "upcoming" | "active" | "completed") => void;
   onAddMatch: (match: Omit<Match, "id" | "home_score" | "away_score" | "status">) => void;
   onDeleteMatch: (id: string) => void;
 }) {
@@ -36,6 +38,11 @@ export function AdminScoring({
   const [addPitch, setAddPitch] = useState("");
   const [addMatchday, setAddMatchday] = useState(1);
   const [addError, setAddError] = useState("");
+
+  // ── Score edit state (for finished/forfeited matches) ────────────────────
+  const [editingScoreId, setEditingScoreId] = useState<string | null>(null);
+  const [editHome, setEditHome] = useState(0);
+  const [editAway, setEditAway] = useState(0);
 
   // ── Reschedule state ──────────────────────────────────────────────────────
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
@@ -207,11 +214,32 @@ export function AdminScoring({
 
         return (
           <div key={t.id}>
-            <div
-              className="text-xs uppercase tracking-widest mb-2"
-              style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}
-            >
-              {t.name}
+            {/* Tournament header with status control */}
+            <div className="flex items-center justify-between mb-2">
+              <div
+                className="text-xs uppercase tracking-widest"
+                style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}
+              >
+                {t.name}
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase tracking-wide mr-1" style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}>Status:</span>
+                {(["upcoming", "active", "completed"] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => onUpdateTournament(t.id, s)}
+                    className="px-2 py-0.5 rounded text-[10px] uppercase tracking-wide"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      background: t.status === s ? "var(--amber)" : "var(--pitch-950)",
+                      color: t.status === s ? "#101010" : "var(--chalk-dim)",
+                      border: `1px solid ${t.status === s ? "var(--amber)" : "var(--line)"}`,
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="space-y-3">
               {tMatches.map((m) => {
@@ -348,6 +376,83 @@ export function AdminScoring({
                           >
                             Reschedule
                           </button>
+                        )}
+                      </div>
+                    )}
+
+                    {(m.status === "finished" || m.status === "forfeited") && (
+                      <div className="border-t" style={{ borderColor: "var(--line)" }}>
+                        {editingScoreId === m.id ? (
+                          <div className="p-3 space-y-2">
+                            <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}>
+                              Edit final score
+                            </p>
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2 flex-1">
+                                <span className="text-xs truncate" style={{ color: "var(--chalk)", fontFamily: "var(--font-body)" }}>{home?.name}</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={editHome}
+                                  onChange={(e) => setEditHome(Number(e.target.value))}
+                                  className="w-14 px-2 py-1 rounded text-sm text-center"
+                                  style={{ background: "var(--pitch-950)", border: "1px solid var(--line)", color: "var(--chalk)" }}
+                                />
+                              </div>
+                              <span style={{ color: "var(--chalk-dim)" }}>:</span>
+                              <div className="flex items-center gap-2 flex-1 flex-row-reverse">
+                                <span className="text-xs truncate" style={{ color: "var(--chalk)", fontFamily: "var(--font-body)" }}>{away?.name}</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={editAway}
+                                  onChange={(e) => setEditAway(Number(e.target.value))}
+                                  className="w-14 px-2 py-1 rounded text-sm text-center"
+                                  style={{ background: "var(--pitch-950)", border: "1px solid var(--line)", color: "var(--chalk)" }}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  onUpdate(m.id, { home_score: editHome, away_score: editAway });
+                                  setEditingScoreId(null);
+                                }}
+                                className="flex-1 py-1.5 rounded text-xs font-semibold"
+                                style={{ background: "var(--amber)", color: "#101010", fontFamily: "var(--font-mono)" }}
+                              >
+                                Save score
+                              </button>
+                              <button
+                                onClick={() => setEditingScoreId(null)}
+                                className="flex-1 py-1.5 rounded text-xs"
+                                style={{ background: "var(--pitch-700)", color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex">
+                            <button
+                              onClick={() => {
+                                setEditingScoreId(m.id);
+                                setEditHome(m.home_score);
+                                setEditAway(m.away_score);
+                              }}
+                              className="flex-1 py-2 text-xs uppercase tracking-wide"
+                              style={{ background: "var(--pitch-950)", color: "var(--chalk-dim)" }}
+                            >
+                              ✎ Edit score
+                            </button>
+                            <button
+                              onClick={() => onUpdate(m.id, { status: "live", })}
+                              className="flex-1 py-2 text-xs uppercase tracking-wide"
+                              style={{ background: "var(--pitch-700)", color: "var(--chalk-dim)" }}
+                            >
+                              ↩ Reopen
+                            </button>
+                          </div>
                         )}
                       </div>
                     )}
