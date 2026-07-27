@@ -511,6 +511,10 @@ export function AdminScoring({
                         </button>
                       </div>
                     )}
+
+                    {(m.status === "finished" || m.status === "forfeited") && (
+                      <FinishedMatchEditor match={m} onUpdate={onUpdate} />
+                    )}
                   </div>
                 );
               })}
@@ -518,6 +522,97 @@ export function AdminScoring({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ── Finished / Forfeited score editor ────────────────────────────────────────
+function FinishedMatchEditor({
+  match,
+  onUpdate,
+}: {
+  match: Match;
+  onUpdate: (id: string, updates: Partial<Match>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [home, setHome] = useState(match.home_score);
+  const [away, setAway] = useState(match.away_score);
+
+  function handleSave() {
+    onUpdate(match.id, { home_score: home, away_score: away });
+    setOpen(false);
+  }
+
+  return (
+    <div className="border-t" style={{ borderColor: "var(--line)" }}>
+      <button
+        onClick={() => { setOpen((v) => !v); setHome(match.home_score); setAway(match.away_score); }}
+        className="w-full py-2 text-xs uppercase tracking-wide"
+        style={{ background: "var(--pitch-950)", color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}
+      >
+        {open ? "▲ cancel edit" : "✎ correct score"}
+      </button>
+
+      {open && (
+        <div className="p-3 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-xs text-center" style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}>
+              Home score
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <button
+                  onClick={() => setHome((v) => Math.max(0, v - 1))}
+                  className="px-3 py-1 rounded-full"
+                  style={{ background: "var(--pitch-700)", color: "var(--chalk)" }}
+                >−</button>
+                <span style={{ fontFamily: "var(--font-display)", fontSize: "22px", color: "var(--chalk)", minWidth: "24px", textAlign: "center" }}>
+                  {home}
+                </span>
+                <button
+                  onClick={() => setHome((v) => v + 1)}
+                  className="px-3 py-1 rounded-full"
+                  style={{ background: "var(--amber)", color: "#101010" }}
+                >+</button>
+              </div>
+            </label>
+
+            <label className="text-xs text-center" style={{ color: "var(--chalk-dim)", fontFamily: "var(--font-mono)" }}>
+              Away score
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <button
+                  onClick={() => setAway((v) => Math.max(0, v - 1))}
+                  className="px-3 py-1 rounded-full"
+                  style={{ background: "var(--pitch-700)", color: "var(--chalk)" }}
+                >−</button>
+                <span style={{ fontFamily: "var(--font-display)", fontSize: "22px", color: "var(--chalk)", minWidth: "24px", textAlign: "center" }}>
+                  {away}
+                </span>
+                <button
+                  onClick={() => setAway((v) => v + 1)}
+                  className="px-3 py-1 rounded-full"
+                  style={{ background: "var(--amber)", color: "#101010" }}
+                >+</button>
+              </div>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={handleSave}
+              className="py-2 rounded-md text-xs font-semibold uppercase tracking-wide"
+              style={{ background: "var(--amber)", color: "#101010", fontFamily: "var(--font-mono)" }}
+            >
+              Save score
+            </button>
+            <button
+              onClick={() => onUpdate(match.id, { status: "live" })}
+              className="py-2 rounded-md text-xs uppercase tracking-wide"
+              style={{ background: "var(--pitch-700)", color: "var(--chalk)", fontFamily: "var(--font-mono)" }}
+            >
+              Reopen as live
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
